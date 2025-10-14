@@ -2,6 +2,9 @@
 
 Un conteneur simple implémenté en Python utilisant les namespaces Linux et les cgroups.
 
+> **Inspiré par le cours "Complete Intro to Containers" de [Brian Holt](https://containers-v2.holt.courses)**  
+> Ce projet implémente manuellement les concepts fondamentaux de la conteneurisation présentés dans ce cours exceptionnel.
+
 ## 🏗️ Architecture
 
 ```
