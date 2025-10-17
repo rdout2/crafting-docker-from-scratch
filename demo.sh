@@ -1,50 +1,50 @@
 #!/bin/bash
 
-# Script de démonstration pour mini-docker
-# Assurez-vous d'avoir configuré le rootfs Alpine avant d'exécuter
+# Demo script for mini-docker
+# Make sure you have configured the Alpine rootfs before running
 
-echo "🐳 Démonstration de Mini-Docker"
+echo "🐳 Mini-Docker Demo"
 echo "================================"
 
-# Vérification des prérequis
+# Prerequisite checks
 if [ "$EUID" -ne 0 ]; then
-    echo "❌ Ce script doit être exécuté avec sudo"
+    echo "❌ This script must be run with sudo"
     exit 1
 fi
 
 if [ ! -d "./rootfs/alpine/bin" ]; then
-    echo "❌ Rootfs Alpine non configuré. Veuillez suivre les instructions du README."
+    echo "❌ Alpine rootfs not configured. Please follow the README instructions."
     exit 1
 fi
 
-echo "✅ Prérequis vérifiés"
+echo "✅ Prerequisites verified"
 
-# Test 1: Commande simple
+# Test 1: Simple command
 echo ""
-echo "🧪 Test 1: Commande simple (ls)"
+echo "🧪 Test 1: Simple command (ls)"
 python3 main.py run /bin/ls -la /
 
-# Test 2: Hostname personnalisé
+# Test 2: Custom hostname
 echo ""
-echo "🧪 Test 2: Hostname personnalisé"
+echo "🧪 Test 2: Custom hostname"
 python3 main.py run --hostname mon-conteneur /bin/hostname
 
-# Test 3: Limite de mémoire
+# Test 3: Memory limit
 echo ""
-echo "🧪 Test 3: Limite de mémoire (100M)"
-python3 main.py run --memory 100M /bin/sh -c "echo 'Test avec limite mémoire'"
+echo "🧪 Test 3: Memory limit (100M)"
+python3 main.py run --memory 100M /bin/sh -c "echo 'Test with memory limit'"
 
-# Test 4: Limite de CPU
+# Test 4: CPU limit
 echo ""
-echo "🧪 Test 4: Limite de CPU (0.5 cœurs)"
-python3 main.py run --cpus 0.5 /bin/sh -c "echo 'Test avec limite CPU'"
+echo "🧪 Test 4: CPU limit (0.5 cores)"
+python3 main.py run --cpus 0.5 /bin/sh -c "echo 'Test with CPU limit'"
 
-# Test 5: Combinaison de limites
+# Test 5: Combined limits
 echo ""
-echo "🧪 Test 5: Combinaison mémoire + CPU + hostname"
-python3 main.py run --memory 200M --cpus 1.0 --hostname test-conteneur /bin/sh -c "echo 'Test complet' && /bin/hostname"
+echo "🧪 Test 5: Memory + CPU + hostname"
+python3 main.py run --memory 200M --cpus 1.0 --hostname test-container /bin/sh -c "echo 'Full test' && /bin/hostname"
 
 echo ""
-echo "✅ Démonstration terminée"
+echo "✅ Demo finished"
 echo ""
-echo "💡 Pour plus d'exemples, consultez le README.md"
+echo "💡 For more examples, see README.md"

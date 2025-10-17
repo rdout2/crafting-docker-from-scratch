@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Commande run pour mini-docker
-Gère l'exécution des conteneurs avec isolation des namespaces et cgroups
+Run command for mini-docker
+Manages container execution with namespace and cgroup isolation
 """
 
 import os
@@ -13,7 +13,7 @@ from cgroups.manager import CgroupManager
 
 
 def parse_memory_limit(memory_str):
-    """Parse une chaîne de limite de mémoire (ex: '100M', '1G') en bytes"""
+    """Parse a memory limit string (e.g., '100M', '1G') into bytes"""
     if not memory_str:
         return None
     
@@ -30,9 +30,9 @@ def parse_memory_limit(memory_str):
 
 
 def setup_signal_handlers(container_process):
-    """Configure les gestionnaires de signaux pour la propreté"""
+    """Configure signal handlers for clean shutdown"""
     def signal_handler(signum, frame):
-        print(f"\nReçu le signal {signum}, arrêt du conteneur...")
+        print(f"\nReceived signal {signum}, stopping container...")
         container_process.cleanup()
         sys.exit(0)
     
@@ -41,19 +41,19 @@ def setup_signal_handlers(container_process):
 
 
 def run_command(args):
-    """Exécute la commande run avec les paramètres donnés"""
-    print(f"🚀 Démarrage du conteneur avec la commande: {args.image}")
+    """Execute the run command with the given parameters"""
+    print(f"🚀 Starting container with command: {args.image}")
     
-    # Validation des paramètres
+    # Validate parameters
     if not os.path.exists(args.rootfs):
-        print(f"❌ Erreur: Le rootfs '{args.rootfs}' n'existe pas")
+        print(f"❌ Error: Rootfs '{args.rootfs}' does not exist")
         sys.exit(1)
     
-    # Parse des limites de ressources
+    # Parse resource limits
     memory_limit = parse_memory_limit(args.memory)
     
     try:
-        # Création du gestionnaire de cgroups
+        # Create the cgroup manager
         cgroup_manager = None
         if memory_limit or args.cpus:
             cgroup_manager = CgroupManager()
@@ -61,14 +61,14 @@ def run_command(args):
             cgroup_manager.create_cgroup(container_id)
             
             if memory_limit:
-                print(f"📊 Limite de mémoire: {args.memory}")
+                print(f"📊 Memory limit: {args.memory}")
                 cgroup_manager.set_memory_limit(container_id, memory_limit)
             
             if args.cpus:
-                print(f"⚡ Limite de CPU: {args.cpus} cœurs")
+                print(f"⚡ CPU limit: {args.cpus} cores")
                 cgroup_manager.set_cpu_limit(container_id, args.cpus)
         
-        # Création et configuration du processus conteneur
+        # Create and configure the container process
         container = ContainerProcess(
             rootfs=args.rootfs,
             hostname=args.hostname,
@@ -76,18 +76,18 @@ def run_command(args):
             container_id=container_id if cgroup_manager else None
         )
         
-        # Configuration des gestionnaires de signaux
+        # Configure signal handlers
         setup_signal_handlers(container)
         
-        # Exécution du conteneur
-        print("🔒 Création des namespaces et isolation...")
+        # Run the container
+        print("🔒 Creating namespaces and isolation...")
         container.run(args.image, args.args)
         
     except PermissionError:
-        print("❌ Erreur: Permissions insuffisantes. Exécutez avec sudo.")
+        print("❌ Error: Insufficient permissions. Run with sudo.")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Erreur lors de l'exécution du conteneur: {e}")
+        print(f"❌ Error while running the container: {e}")
         if cgroup_manager and 'container_id' in locals():
             cgroup_manager.cleanup(container_id)
         sys.exit(1)

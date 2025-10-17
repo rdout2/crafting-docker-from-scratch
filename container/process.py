@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Gestion des processus et namespaces pour mini-docker
-Utilise os.fork() et os.unshare() pour créer l'isolation
+Process and namespace management for mini-docker
+Uses os.fork() and os.unshare() to create isolation
 """
 
 import os
@@ -12,7 +12,7 @@ from typing import Optional, List
 
 
 class ContainerProcess:
-    """Gère l'exécution d'un processus dans un conteneur isolé"""
+    """Manage execution of a process in an isolated container"""
     
     def __init__(self, rootfs: str, hostname: Optional[str] = None, 
                  cgroup_manager=None, container_id: Optional[str] = None):
@@ -23,7 +23,7 @@ class ContainerProcess:
         self.child_pid = None
     
     def run(self, command: str, args: List[str] = None):
-        """Exécute la commande dans le conteneur isolé"""
+        """Execute the command inside the isolated container"""
         if args is None:
             args = []
         
@@ -31,133 +31,133 @@ class ContainerProcess:
         self.child_pid = os.fork()
         
         if self.child_pid == 0:
-            # Processus enfant - configuration de l'isolation
+            # Child process - set up isolation
             self._setup_container()
             self._execute_command(command, args)
         else:
-            # Processus parent - gestion du conteneur
+            # Parent process - manage the container
             self._manage_container()
     
     def _setup_container(self):
-        """Configure l'isolation du conteneur dans le processus enfant"""
+        """Configure container isolation in the child process"""
         try:
-            # Création des nouveaux namespaces
+            # Create new namespaces
             self._create_namespaces()
             
-            # Changement de racine (chroot)
+            # Change root (chroot)
             self._setup_rootfs()
             
-            # Configuration du hostname
+            # Configure hostname
             if self.hostname:
                 self._set_hostname()
             
-            # Application des limites de cgroups
+            # Apply cgroup limits
             if self.cgroup_manager and self.container_id:
                 self.cgroup_manager.add_process_to_cgroup(
                     self.container_id, os.getpid()
                 )
             
-            print("✅ Conteneur configuré avec succès")
+            print("✅ Container configured successfully")
             
         except Exception as e:
-            print(f"❌ Erreur lors de la configuration du conteneur: {e}")
+            print(f"❌ Error while configuring the container: {e}")
             sys.exit(1)
     
     def _create_namespaces(self):
-        """Crée les nouveaux namespaces pour l'isolation"""
-        # Flags pour les namespaces (Linux)
+        """Create new namespaces for isolation"""
+        # Flags for namespaces (Linux)
         namespace_flags = 0
         
-        # Namespace PID pour l'isolation des processus
+        # PID namespace for process isolation
         namespace_flags |= os.CLONE_NEWPID
         
-        # Namespace UTS pour l'isolation du hostname
+        # UTS namespace for hostname isolation
         namespace_flags |= os.CLONE_NEWUTS
         
-        # Namespace NET pour l'isolation réseau (si nécessaire)
+        # NET namespace for network isolation (if needed)
         # namespace_flags |= os.CLONE_NEWNET
         
-        # Namespace MNT pour l'isolation des points de montage
+        # MNT namespace for mount isolation
         namespace_flags |= os.CLONE_NEWNS
         
-        # Création des nouveaux namespaces
+        # Create the new namespaces
         os.unshare(namespace_flags)
-        print("🔒 Namespaces créés avec succès")
+        print("🔒 Namespaces created successfully")
     
     def _setup_rootfs(self):
-        """Configure le système de fichiers racine (chroot)"""
-        # Changement vers le nouveau rootfs
+        """Configure the root filesystem (chroot)"""
+        # Change to the new rootfs
         os.chroot(self.rootfs)
         
-        # Changement du répertoire de travail vers la nouvelle racine
+        # Change working directory to the new root
         os.chdir('/')
         
-        print(f"📁 Rootfs configuré: {self.rootfs}")
+        print(f"📁 Rootfs configured: {self.rootfs}")
     
     def _set_hostname(self):
-        """Configure le hostname du conteneur"""
+        """Configure the container hostname"""
         try:
-            # Écriture du nouveau hostname
+            # Write the new hostname
             with open('/proc/sys/kernel/hostname', 'w') as f:
                 f.write(self.hostname)
-            print(f"🏷️  Hostname configuré: {self.hostname}")
+            print(f"🏷️  Hostname configured: {self.hostname}")
         except PermissionError:
-            print("⚠️  Impossible de changer le hostname (permissions)")
+            print("⚠️  Unable to change hostname (permissions)")
     
     def _execute_command(self, command: str, args: List[str]):
-        """Exécute la commande dans le conteneur"""
+        """Execute the command inside the container"""
         try:
             # Construction de la commande complète
             full_command = [command] + args
             
-            print(f"▶️  Exécution: {' '.join(full_command)}")
+            print(f"▶️  Executing: {' '.join(full_command)}")
             
             # Exécution de la commande
             os.execvp(command, full_command)
             
         except FileNotFoundError:
-            print(f"❌ Commande non trouvée: {command}")
+            print(f"❌ Command not found: {command}")
             sys.exit(127)  # Code d'erreur standard pour "command not found"
         except Exception as e:
-            print(f"❌ Erreur lors de l'exécution: {e}")
+            print(f"❌ Error during execution: {e}")
             sys.exit(1)
     
     def _manage_container(self):
-        """Gère le conteneur depuis le processus parent"""
+        """Manage the container from the parent process"""
         try:
-            # Attente de la fin du processus enfant
+            # Wait for the child process to finish
             pid, status = os.waitpid(self.child_pid, 0)
             
-            # Affichage du code de sortie
+            # Display exit code
             exit_code = os.WEXITSTATUS(status)
             if exit_code == 0:
-                print("✅ Conteneur terminé avec succès")
+                print("✅ Container finished successfully")
             else:
-                print(f"❌ Conteneur terminé avec le code d'erreur: {exit_code}")
+                print(f"❌ Container exited with error code: {exit_code}")
             
         except KeyboardInterrupt:
-            print("\n🛑 Arrêt du conteneur...")
+            print("\n🛑 Stopping container...")
             self.cleanup()
         except Exception as e:
-            print(f"❌ Erreur lors de la gestion du conteneur: {e}")
+            print(f"❌ Error while managing the container: {e}")
             self.cleanup()
     
     def cleanup(self):
-        """Nettoie les ressources du conteneur"""
+        """Clean up container resources"""
         if self.child_pid:
             try:
-                # Envoi du signal SIGTERM au processus enfant
+                # Send SIGTERM to the child process
                 os.kill(self.child_pid, signal.SIGTERM)
                 
-                # Attente de la fin du processus
+                # Wait for the process to finish
                 os.waitpid(self.child_pid, 0)
                 
             except ProcessLookupError:
-                # Le processus est déjà terminé
+                # The process is already finished
                 pass
         
-        # Nettoyage des cgroups
+        # Clean up cgroups
         if self.cgroup_manager and self.container_id:
             self.cgroup_manager.cleanup(self.container_id)
         
-        print("🧹 Ressources nettoyées")
+        print("🧹 Resources cleaned up")
