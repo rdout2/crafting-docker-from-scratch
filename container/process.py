@@ -156,7 +156,7 @@ class ContainerProcess:
                 # The process is already finished
                 pass
         
-        # Clean up cgroups
+        # Clean up cgroup
         if self.cgroup_manager and self.container_id:
             self.cgroup_manager.cleanup(self.container_id)
         
